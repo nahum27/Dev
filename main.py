@@ -13,11 +13,15 @@ import tensorflow
 #ModuleNotFoundError: No module named 'tensorflow.contrib'
 import random
 import json
-
+import pickle
 
 with open("./json/intents.json") as file:
     data = json.load(file)
 
+
+try:
+    with open("data.pickle", "rb") as f:
+        words, labels, training, output = pickle.load(f)
 
 
 words = []
