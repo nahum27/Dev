@@ -7,8 +7,10 @@ from nltk.stem.lancaster import LancasterStemmer
 stemmer = LancasterStemmer()
 
 import numpy
-#import tflearn
-#import tensorflow
+import tflearn
+import tensorflow
+#tensorflow 2.0버전은 tensorflow.contrib이 없다 pip installl tensorflow=1.14버전
+#ModuleNotFoundError: No module named 'tensorflow.contrib'
 import random
 import json
 
@@ -21,18 +23,78 @@ with open("./json/intents.json") as file:
 words = []
 labels = []
 docs = []
+docs_x = []
+docs_y = []
+
 
 for intent in data['intents']:
     for pattern in intent['patterns']:
         wrds = nltk.word_tokenize(pattern)
         words.extend(wrds)
-        docs.append(pattern)
-
+        docs_x.append(wrds)
+        docs_y.append(intent['tag'])
     if intent["tag"] not in labels:
         labels.append(intent['tag'])
 
 
 
+words = [stemmer.stem(w.lower()) for w in words if w !="?" ]
+words = sorted(list(set(words)))
+
+labels = sorted(labels)
+
+
+training = []
+output = []
+
+out_empty = [0 for _ in range(len(labels))]
+
+
+for x, doc in enumerate(docs_x):
+    bag = []
+
+    wrds = [stemmer.stem(w) for w in doc]
+
+    for w in words:
+        if w in wrds:
+            bag.append(1)
+        else:
+            bag.append(0)
+
+    output_row = out_empty[:]
+    output_row[labels.index(docs_y[x])] = 1
+
+    training.append(bag)
+    output.append(output_row)
+
+training = numpy.array(training)
+output = numpy.array(output)
+
+
+
+tensorflow.reset_defaault_graph()
+
+net = tflearn.input_data(shape=[None, len(training[0])])
+net = tflearn.fully_connected(net,8)
+net = tflearn.fully_connected(net,8)
+net = tflearn.fully_connected(net, len(output[0]), activation='softmax')
+
+model = tflearn.DNN(net)
+
+model.fit(training, output, n_epoch=1000, batch_size=8, show_metric=True)
+model.save('model.tflearn')
+
+
+
+
+
+
+
+
+
+
+
 print(words)
 print(labels)
-print(docs)
+print(docs_x)
+print(docs_y)
